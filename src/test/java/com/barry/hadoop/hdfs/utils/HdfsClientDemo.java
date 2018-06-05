@@ -1,5 +1,7 @@
 package com.barry.hadoop.hdfs.utils;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.junit.After;
@@ -7,8 +9,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.io.IOException;
+
+import java.io.*;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 /**
@@ -139,6 +143,89 @@ public class HdfsClientDemo {
             logger.info("<==========================================================>");
         }
     }
+
+    /**
+     * 读取hdfs中的文件内容
+     * */
+    @Test
+    public void testOpen() throws Exception {
+        FSDataInputStream fsDataInputStream = fs.open(new Path("/data/calfiles/bmwtest.txt"));
+        StringWriter stringWriter = new StringWriter();
+        IOUtils.copy(fsDataInputStream, stringWriter, StandardCharsets.UTF_8.toString());
+        String content = stringWriter.toString();
+        logger.info("=============================>文件内容为:"+content);
+        fsDataInputStream.close();
+        stringWriter.close();
+    }
+
+    @Test
+    public void testOpen2() throws Exception {
+        FSDataInputStream fsDataInputStream = fs.open(new Path("/data/calfiles/bmwtest.txt"));
+        StringBuilderWriter stringWriter = new StringBuilderWriter();
+        IOUtils.copy(fsDataInputStream, stringWriter, StandardCharsets.UTF_8.toString());
+        String content = stringWriter.toString();
+        logger.info("=============================>文件内容为:"+content);
+        fsDataInputStream.close();
+        stringWriter.close();
+    }
+
+    @Test
+    public void testOpen3() throws Exception {
+        FSDataInputStream fsDataInputStream = fs.open(new Path("/data/calfiles/bmwtest.txt"));
+        BufferedReader br = new BufferedReader(new InputStreamReader(fsDataInputStream));
+        String line = null;
+        while ((line=br.readLine())!=null){
+            logger.info("=============================>文件内容为:"+line);
+        }
+        fsDataInputStream.close();
+        br.close();
+    }
+
+    /**
+     * 读取hdfs中指定偏移量的文件内容
+     * */
+    @Test
+    public void testRandomData() throws Exception {
+        FSDataInputStream fsDataInputStream = fs.open(new Path("/data/calfiles/bmwtest.txt"));
+        //将读取的起始位置进行指定
+        fsDataInputStream.seek(82);
+        //读5个字节
+        byte[] bytes = new byte[5];
+        fsDataInputStream.read(bytes);
+        logger.info("=====================>读取内容为:"+new String(bytes));
+        fsDataInputStream.close();
+    }
+
+    @Test
+    public void testWriteData() throws Exception {
+        //fs.mkdirs(new Path("/data/images"));
+        //创建一个图片文件,此图片未填充内容，因此不能正常显示出来
+        FSDataOutputStream out = fs.create(new Path("/data/images/validPicture.jpg"), false);
+        //往图片中写入内容
+        FileInputStream inputStream = new FileInputStream("C:\\Users\\qxv0963\\Desktop\\TempFiles\\jpg\\zly.jpg");
+        byte[] bytes = new byte[1024];
+        int read = 0;
+        while ((read = inputStream.read(bytes))!=-1){
+            out.write(bytes, 0, read);
+        }
+        inputStream.close();
+        out.close();
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
