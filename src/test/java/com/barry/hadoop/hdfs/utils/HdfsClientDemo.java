@@ -1,13 +1,17 @@
 package com.barry.hadoop.hdfs.utils;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Arrays;
+
 /**
  * @Auther: hants
  * @Date: 2018-06-05 13:05
@@ -16,6 +20,16 @@ import java.net.URI;
 public class HdfsClientDemo {
 
     private static final Logger logger = LoggerFactory.getLogger(HdfsClientDemo.class);
+
+    private FileSystem fs = null;
+
+    @Before
+    public void init() throws Exception {
+        Configuration conf = new Configuration();
+        conf.set("dfs.replication", "3");
+        conf.set("dfs.blocksize", "128M");
+        fs = FileSystem.get(new URI("hdfs://192.168.33.101:9000/"), conf, "hts");
+    }
 
     @Test
     public void testUploadFilesToHdfsSystem(){
@@ -48,7 +62,9 @@ public class HdfsClientDemo {
             logger.error("testHdfsFileSystem error {} ", e);
         }finally {
             try {
-                fs.close();
+                if (fs!=null){
+                    fs.close();
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -56,25 +72,87 @@ public class HdfsClientDemo {
     }
 
 
+    /**
+     * 下载文件
+     * */
+    @Test
+    public void testGetHdfsSystem() throws Exception {
+        fs.copyToLocalFile(new Path("/data/pkgfiles/hbase-1.2.6-bin.tar.gz"), new Path("C:\\Users\\qxv0963\\Desktop\\TempFiles"));
+    }
+
+    /**
+     * 在hdfs内部移动修改名称
+     * */
+    @Test
+    public void testRename() throws Exception {
+        fs.rename(new Path("/jdk-8u171-linux-x64.tar.gz"), new Path("/data/pkgfiles/jdk8.tar.gz"));
+    }
+
+    /**
+     * 在hdfs内部创建文件夹
+     * */
+    @Test
+    public void testMkdir() throws Exception {
+        fs.mkdirs(new Path("/data/busifiles"));
+    }
+
+    /**
+     * 在hdfs内部删除文件夹
+     * true代表递归删除
+     * */
+    @Test
+    public void testRm() throws Exception {
+        fs.delete(new Path("/data/busifiles"), true);
+    }
+
+    /**
+     * 查询hdfs指定目录下的信息
+     * true代表递归显示
+     * */
+    @Test
+    public void testLs() throws Exception {
+        //只显示文件信息，不返回文件夹的目录信息
+        RemoteIterator<LocatedFileStatus> remoteIterator = fs.listFiles(new Path("/data/pkgfiles"), true);
+        while (remoteIterator.hasNext()){
+            LocatedFileStatus status = remoteIterator.next();
+            logger.info("===============================>块大小:"+status.getBlockSize());
+            logger.info("===============================>文件长度:"+status.getBlockSize());
+            logger.info("===============================>副本数量:"+status.getReplication());
+            logger.info("===============================>块信息:"+ Arrays.toString(status.getBlockLocations()));
+            logger.info("<==========================================================>");
+        }
+    }
+
+    @Test
+    public void testLs2() throws Exception {
+        //返回hdfs内部文件和文件夹的信息
+        FileStatus[] fileStatuses = fs.listStatus(new Path("/"));
+        for (FileStatus status : fileStatuses){
+            logger.info("===============================>文件全路径:"+status.getPath());
+            if (status.isDirectory()){
+                logger.info("===============================>文件夹类型");
+            }else {
+                logger.info("===============================>文件类型");
+            }
+            logger.info("===============================>块大小:"+status.getBlockSize());
+            logger.info("===============================>文件长度:"+status.getBlockSize());
+            logger.info("===============================>副本数量:"+status.getReplication());
+            logger.info("<==========================================================>");
+        }
+    }
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    @After
+    public void close(){
+        try {
+            if (fs!=null){
+                fs.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 
 }
