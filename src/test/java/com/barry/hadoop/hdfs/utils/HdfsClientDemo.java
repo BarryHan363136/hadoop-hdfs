@@ -212,23 +212,6 @@ public class HdfsClientDemo {
         out.close();
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     @After
     public void close(){
         try {
